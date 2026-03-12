@@ -12,9 +12,11 @@ if TYPE_CHECKING:
 
 class Collector(models.Model):
     name = fields.CharField(max_length=64)
-    ball: fields.ForeignKeyRelation["Ball"] = fields.ForeignKeyField(
+    ball: fields.ForeignKeyNullableRelation["Ball"] = fields.ForeignKeyField(
         "models.Ball",
-        on_delete=fields.CASCADE
+        on_delete=fields.CASCADE,
+        null=True,
+        default=None,
     )
     ball_id: int
     special: fields.ForeignKeyNullableRelation["Special"] = fields.ForeignKeyField(
@@ -31,8 +33,8 @@ class Collector(models.Model):
     requirements: fields.BackwardFKRelation[CollectorRequirement]
 
     @property
-    def cached_ball(self):
-        return balls.get(self.ball_id, self.ball)
+    def cached_ball(self) -> "Ball | None":
+        return balls.get(self.ball_id, self.ball) if self.ball_id else None
     
     @property
     def cached_special(self) -> "Special | None":

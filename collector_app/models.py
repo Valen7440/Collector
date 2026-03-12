@@ -6,7 +6,7 @@ from bd_models.models import Ball, Player, Special
 
 class Collector(models.Model):
     name = models.CharField(max_length=64, unique=True)
-    ball = models.ForeignKey(Ball, on_delete=models.CASCADE)
+    ball = models.ForeignKey(Ball, on_delete=models.CASCADE, null=True, blank=True)
     special = models.ForeignKey(Special, on_delete=models.SET_NULL, null=True, blank=True)
     start_date = models.DateTimeField(
         help_text="Start date of this collector. If blank, it starts immediately",

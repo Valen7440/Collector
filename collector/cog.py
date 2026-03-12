@@ -16,6 +16,7 @@ from ballsdex.core.collector_models import (
 )
 from ballsdex.core.models import BallInstance, Player
 from ballsdex.core.utils.paginator import FieldPageSource, Pages
+from ballsdex.core.utils.transformers import BallEnabledTransform
 from ballsdex.settings import settings
 from tortoise.timezone import now as tortoise_now, get_default_timezone
 
@@ -33,7 +34,12 @@ class Collector(commands.GroupCog):
         self.bot = bot
 
     @app_commands.command()
-    async def claim(self, interaction: discord.Interaction["BallsDexBot"], collector: CollectorEnabledTransform):
+    async def claim(
+        self, 
+        interaction: discord.Interaction["BallsDexBot"], 
+        collector: CollectorEnabledTransform,
+        countryball: BallEnabledTransform | None = None
+    ):
         """
         Claim an collector.
 
@@ -41,10 +47,26 @@ class Collector(commands.GroupCog):
         ----------
         collector: Collector
             The collector to claim.
+        countryball: Ball | None
+            If collector don't have a specific countryball, select a countryball that would you like to do.
         """
         player, _ = await Player.get_or_create(discord_id=interaction.user.id)
         if await CollectorInstance.filter(player=player, collector=collector).exists():
             await interaction.response.send_message("You've claimed this collector!", ephemeral=True)
+            return
+        if collector.ball and countryball is not None:
+            await interaction.response.send_message(
+                f"You can't select a {settings.collectible_name} because this collector has already "
+                f"assigned a {settings.collectible_name}.",
+                ephemeral=True
+            )
+            return
+        if not collector.ball and countryball is None:
+            await interaction.response.send_message(
+                f"You have to select a {settings.collectible_name} because this collector "
+                f"doesn't have any {settings.collectible_name} assigned.",
+                ephemeral=True
+            )
             return
 
         await interaction.response.defer(thinking=True)
@@ -53,7 +75,7 @@ class Collector(commands.GroupCog):
         if not requirements:
             instance = await BallInstance.create(
                 player=player,
-                ball=collector.cached_ball,
+                ball=collector.cached_ball if collector.cached_ball else countryball,
                 health_bonus=random.randint(-settings.max_health_bonus, settings.max_health_bonus),
                 attack_bonus=random.randint(settings.max_attack_bonus, settings.max_attack_bonus),
                 special=collector.cached_special,
@@ -77,7 +99,7 @@ class Collector(commands.GroupCog):
         
         instance = await BallInstance.create(
             player=player,
-            ball=collector.cached_ball,
+            ball=collector.cached_ball if collector.cached_ball else countryball,
             health_bonus=random.randint(-settings.max_health_bonus, settings.max_health_bonus),
             attack_bonus=random.randint(settings.max_attack_bonus, settings.max_attack_bonus),
             special=collector.cached_special,
@@ -137,9 +159,9 @@ class Collector(commands.GroupCog):
         pages = Pages(source, interaction=interaction)
         await pages.start()
     
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     async def collector(self, ctx: commands.Context["BallsDexBot"]):
-        pass
+        await ctx.send_help(ctx.command)
 
     @collector.command()
     @commands.is_owner()
