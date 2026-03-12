@@ -36,7 +36,8 @@ DJANGO_APP_FILES = {
         "migrations/__init__.py",
         "migrations/0001_initial.py",
         "migrations/0002_remove_collector_collector_amount_d44e07_idx_and_more.py",
-        "migrations/0003_collector_end_date_collector_start_date_and_more.py"
+        "migrations/0003_collector_end_date_collector_start_date_and_more.py",
+        "migrations/0004_alter_collector_ball.py",
     ],
 }
 
